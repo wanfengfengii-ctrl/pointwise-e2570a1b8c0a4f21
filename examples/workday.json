@@ -1,0 +1,10 @@
+{
+  "sheets": [
+    {"sheet_id": "CENTER", "draft_id": "community-common"},
+    {"sheet_id": "EAST", "draft_id": "community-split"},
+    {"sheet_id": "WEST", "draft_id": "community-split"},
+    {"sheet_id": "CARD", "draft_id": "community-single"}
+  ],
+  "east_observation": {"probe": "edge", "point": [0, 0]},
+  "west_observation": {"probe": "edge", "point": [4, 0]}
+}

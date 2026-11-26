@@ -1,0 +1,5 @@
+{
+  "community-common": {"width": 5, "height": 3, "sides": "double", "faces": {"front": [[2, 1]], "back": [[2, 1]]}},
+  "community-split": {"width": 5, "height": 3, "sides": "double", "faces": {"front": [[1, 1]], "back": [[1, 1]]}},
+  "community-single": {"width": 5, "height": 3, "sides": "single", "faces": {"front": [[0, 0], [3, 1]]}}
+}
