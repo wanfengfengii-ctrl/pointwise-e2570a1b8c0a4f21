@@ -12,6 +12,7 @@ from plate.http import handle_plate_request
 from plate.seed import seed_missing_drafts
 from press.http import handle_imprint_request
 from proof.http import handle_issue_request, handle_load_request
+from repair.http import handle_repair_request
 from workshop import BusinessError, canonical_json, not_found
 
 
@@ -28,6 +29,8 @@ _STATION_ROUTES = {
     "observations": handle_paper_request,
     "impressions": handle_imprint_request,
     "acceptances": handle_finish_request,
+    "repair-orders": handle_repair_request,
+    "repair-executions": handle_repair_request,
 }
 
 

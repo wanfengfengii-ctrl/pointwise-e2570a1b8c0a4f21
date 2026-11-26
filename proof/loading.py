@@ -3,7 +3,10 @@ from dataclasses import dataclass
 from hashlib import sha256
 
 from proof.layout import LoadingDirection, ProofLayout, build_proof_layout
+from repair.spec import read_repair_spec, repair_spec_data
 from workshop import BusinessError, canonical_json, fields, identifier, transaction
+
+_BODY_FIELDS = {"proof_id", "edition_id", "layout", "nominal_summary"}
 
 
 @dataclass(frozen=True)
@@ -12,6 +15,7 @@ class LoadedProof:
     edition_id: str
     layout: ProofLayout
     artifact: dict
+    repair: object = None
 
 
 def _decode_artifact(artifact):
@@ -19,7 +23,9 @@ def _decode_artifact(artifact):
         fields(artifact, "version", "body", "digest")
         if type(artifact["version"]) is not int or artifact["version"] != 1:
             raise BusinessError("invalid_artifact", "Unsupported proof version.")
-        body = fields(artifact["body"], "proof_id", "edition_id", "layout", "nominal_summary")
+        body = artifact["body"]
+        if not isinstance(body, dict) or not _BODY_FIELDS <= body.keys() <= _BODY_FIELDS | {"repair"}:
+            raise BusinessError("invalid_artifact", "Unexpected proof body fields.")
         proof_id = identifier(body["proof_id"], "proof_id")
         edition_id = identifier(body["edition_id"], "edition_id")
         expected = sha256(canonical_json(body).encode("ascii")).hexdigest()
@@ -32,9 +38,14 @@ def _decode_artifact(artifact):
         summary = fields(body["nominal_summary"], *names)
         if any(type(value) is not bool for value in summary.values()) or (names and not any(summary.values())):
             raise BusinessError("invalid_artifact", "Invalid nominal proof summary.")
+        repair = None
+        if "repair" in body:
+            repair = read_repair_spec(body["repair"], layout.size)
+            if repair_spec_data(repair) != body["repair"]:
+                raise BusinessError("invalid_artifact", "Proof repair registration is not in canonical form.")
     except BusinessError as exc:
         raise BusinessError("invalid_artifact", str(exc), 422) from exc
-    return LoadedProof(proof_id, edition_id, layout, artifact)
+    return LoadedProof(proof_id, edition_id, layout, artifact, repair)
 
 
 def load_proof(db, proof_id, edition_id, artifact):

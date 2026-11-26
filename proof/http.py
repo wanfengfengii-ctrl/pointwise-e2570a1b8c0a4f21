@@ -3,7 +3,7 @@ from proof.checks import check_initial_alignment
 from proof.issue import issue_proof, read_issued_proof
 from proof.layout import build_proof_layout
 from proof.loading import load_proof, read_loaded_proof
-from workshop import fields, identifier, not_found
+from workshop import BusinessError, fields, identifier, not_found
 
 
 def handle_issue_request(db, method, path, payload):
@@ -12,8 +12,12 @@ def handle_issue_request(db, method, path, payload):
         layout = build_proof_layout(edition.to_data()["spec"])
         return 200, {"edition_id": edition.edition_id, **check_initial_alignment(layout).to_data()}
     if method == "POST" and path == ("proofs",):
-        fields(payload, "edition_id")
-        proof = issue_proof(db, identifier(payload["edition_id"], "edition_id"))
+        if payload.keys() == {"edition_id"}:
+            proof = issue_proof(db, identifier(payload["edition_id"], "edition_id"))
+        elif payload.keys() == {"edition_id", "repair"}:
+            proof = issue_proof(db, identifier(payload["edition_id"], "edition_id"), payload["repair"])
+        else:
+            raise BusinessError("invalid_request", "Supply an edition_id and an optional repair.")
         return 201, proof.artifact
     if method == "GET" and len(path) == 2 and path[0] == "proofs":
         return 200, read_issued_proof(db, identifier(path[1], "proof_id")).artifact

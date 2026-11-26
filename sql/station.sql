@@ -37,3 +37,31 @@ CREATE TABLE IF NOT EXISTS acceptances (
     acceptance_id TEXT PRIMARY KEY NOT NULL,
     receipt TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS repair_orders (
+    order_id TEXT PRIMARY KEY NOT NULL,
+    sheet_id TEXT NOT NULL,
+    proof_id TEXT NOT NULL,
+    impression_id INTEGER NOT NULL REFERENCES impressions(impression_id),
+    readings TEXT NOT NULL,
+    directions TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('open', 'unsolvable', 'superseded')),
+    demand TEXT NOT NULL,
+    interpretation TEXT NOT NULL,
+    actions TEXT NOT NULL,
+    FOREIGN KEY (sheet_id, proof_id) REFERENCES sheets(sheet_id, proof_id)
+);
+
+CREATE INDEX IF NOT EXISTS repair_orders_by_sheet ON repair_orders(sheet_id);
+
+CREATE TABLE IF NOT EXISTS repair_prints (
+    repair_id INTEGER PRIMARY KEY,
+    order_id TEXT NOT NULL REFERENCES repair_orders(order_id),
+    action_no INTEGER NOT NULL,
+    sheet_id TEXT NOT NULL,
+    impression_id INTEGER NOT NULL,
+    coverage TEXT NOT NULL,
+    UNIQUE (order_id, action_no)
+);
+
+CREATE INDEX IF NOT EXISTS repair_prints_by_sheet ON repair_prints(sheet_id, impression_id);

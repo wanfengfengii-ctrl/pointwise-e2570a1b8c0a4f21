@@ -6,6 +6,7 @@ from uuid import uuid4
 from plate.revisions import read_frozen_edition
 from proof.checks import check_initial_alignment
 from proof.layout import build_proof_layout
+from repair.spec import read_repair_spec, repair_spec_data
 from workshop import BusinessError, canonical_json, transaction
 
 
@@ -16,13 +17,14 @@ class IssuedProof:
     artifact: dict
 
 
-def issue_proof(db, edition_id):
+def issue_proof(db, edition_id, repair=None):
     with transaction(db, write=True):
         edition = read_frozen_edition(db, edition_id)
         layout = build_proof_layout(edition.to_data()["spec"])
         check = check_initial_alignment(layout)
         if not check.eligible:
             raise BusinessError("initial_incompatible", "The nominal front has no matching back placement.", 409)
+        repair_spec = read_repair_spec(repair, layout.size) if repair is not None else None
         proof_id = uuid4().hex
         body = {
             "proof_id": proof_id,
@@ -30,6 +32,8 @@ def issue_proof(db, edition_id):
             "layout": layout.to_spec(),
             "nominal_summary": {direction.value: bool(commands) for direction, commands in check.allowed.items()},
         }
+        if repair_spec is not None:
+            body["repair"] = repair_spec_data(repair_spec)
         digest = sha256(canonical_json(body).encode("ascii")).hexdigest()
         artifact = {"version": 1, "body": body, "digest": digest}
         db.execute(
